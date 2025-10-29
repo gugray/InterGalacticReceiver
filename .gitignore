@@ -1,0 +1,10 @@
+.DS_Store
+.pio
+.vs
+lib/
+obj/
+bin/
+electronics/**/*-backups
+electronics/**/cam-*
+Thumbs.db
+
