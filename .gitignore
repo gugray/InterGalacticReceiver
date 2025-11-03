@@ -1,6 +1,7 @@
 .DS_Store
 .pio
 .vs
+.idea
 lib/
 obj/
 bin/

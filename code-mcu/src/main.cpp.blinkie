@@ -1,0 +1,19 @@
+#include <Arduino.h>
+#include <Wire.h>
+#include <math.h>
+
+#include "magic.h"
+
+void setup()
+{
+    pinMode(ONBOARD_LED_PIN, OUTPUT);
+    digitalWrite(ONBOARD_LED_PIN, HIGH);
+}
+
+void loop()
+{
+    digitalWrite(ONBOARD_LED_PIN, LOW);
+    delay(100);
+    digitalWrite(ONBOARD_LED_PIN, HIGH);
+    delay(900);
+}

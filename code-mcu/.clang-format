@@ -1,0 +1,9 @@
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
+ColumnLimit: 0
+BreakBeforeBraces: Allman
+BreakConstructorInitializersBeforeComma: true
+IndentWidth: 4
+UseTab: Never
+TabWidth: 4
+
+

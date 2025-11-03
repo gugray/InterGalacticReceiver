@@ -1,0 +1,60 @@
+(0) Initial setup, not detailed
+==========================================
+
+Headless (minimal) OS
+One WiFi network
+SSH with key
+Locale: en_US
+Updates
+Tailscale
+MC
+
+Additional WiFi networks:
+sudo nmcli connection add type wifi con-name "Schnauze" ifname wlan0 ssid "Schnauze"
+sudo nmcli connection modify "Schnauze" wifi-sec.key-mgmt wpa-psk wifi-sec.psk "xx_PASSWORD_xx"
+
+To connect: sudo nmcli connection up "Schnauze"
+
+(1) Composite display
+==========================================
+
+In /boot/firmware/config.txt ensure this line:
+dtoverlay=vc4-kms-v3d,composite
+
+In /boot/firmware/cmdline.txt add (after space):
+
+Reboot
+
+(2) I2C enabled
+==========================================
+
+sudo raspi-config nonint get_i2c
+=> 0 means enabled
+
+To enable:
+sudo raspi-config nonint do_i2c 0
+
+ls /dev/i2*
+=> it will be i2c-1 on the Raspi 4B
+
+For i2cdetect:
+sudo apt-get install -y i2c-tools
+
+To list:
+sudo i2cdetect -y 1
+
+
+(3) Build prerequisites; build shader code
+==========================================
+
+In VSCode: When remote editing over SSH: install C/C++ extensions pack plugin
+This is needed for clang-format to work
+
+sudo apt install -y build-essential git cmake pkg-config clang-format
+sudo apt install -y libegl1-mesa-dev libgbm-dev libdrm-dev
+
+git clone https://xx_GITHUB_KEY_xx@github.com/gugray/InterGalacticReceiver
+git config --global user.name "xx_NAME_xx"
+git config --global user.email "you@example.com"
+
+Build & run
