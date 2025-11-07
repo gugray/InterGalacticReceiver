@@ -73,6 +73,8 @@
   <li>The sketch can be a fragment shader, or a vertex+fragment shader, and it can include frame-by-frame calculations
     on the CPU. The simpler the better, and it would be best if you can make do without interim framebuffers (but
     we can talk). In any case I'll be happy to do the bulk of porting your sketch to C++ if needed.</li>
+  <li>The sketch can also be Hydra! There are some limitations, but we can extract the shader code from most
+    Hydra sketches and have them executed on the device's GPU directly.</li>
   <li>The sketch can be interactive! The receiver discovered in the 3JNE-CCB system includes three linear inputs,
     which the native beings control by turning knobs on the device. One of these knobs is very noisy and imprecise,
     so that channel will be smoothly quantized to 4 or 8 values.</li>
