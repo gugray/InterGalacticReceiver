@@ -62,6 +62,9 @@ void main_igr()
         int tuner, aknob, bknob, cknob, swtch;
         HardwareController::get_values(tuner, aknob, bknob, cknob, swtch);
     }
+
+    HardwareController::set_light(false);
+    HardwareController::set_led(laOff);
 }
 
 template <typename T>
