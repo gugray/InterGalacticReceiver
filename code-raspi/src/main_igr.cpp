@@ -41,6 +41,7 @@ void main_igr()
 
     FPS fps(TARGET_FPS);
     double last_time = fps.frame_start();
+    // fps.log_fps = true; // DBG
 
     while (app_running)
     {
@@ -91,8 +92,8 @@ void update_station(TuningFeedback &tfb, RenderBlender &renderer, double current
     tfb.tune_status(tuner_status);
 
     // DBG
-    station_ix = 5;
-    tuner_status = tsTuned;
+    // station_ix = 5;
+    // tuner_status = tsTuned;
 
     if (station_ix < -1) return;
 

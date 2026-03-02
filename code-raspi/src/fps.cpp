@@ -63,7 +63,10 @@ void FPS::frame_end()
 
     long avg_elapsed = get_avg_elapsed();
     double avg_fps = 1000000.0 / (double)avg_elapsed;
-    printf("FPS %5.1f / last frame %.2f msec (~%d FPS)    \r", avg_fps, elapsed_msec, extrapolated_fps);
+    if (log_fps)
+    {
+        printf("FPS %5.1f / last frame %.2f msec (~%d FPS)    \r", avg_fps, elapsed_msec, extrapolated_fps);
+    }
 
     if (elapsed >= cycle_usec) return;
     usleep(cycle_usec - elapsed);

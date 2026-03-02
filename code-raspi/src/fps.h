@@ -15,6 +15,9 @@ class FPS
     timeval ts_init;
     timeval ts_start;
 
+  public:
+    bool log_fps = false;
+
   private:
     long get_avg_elapsed();
 
