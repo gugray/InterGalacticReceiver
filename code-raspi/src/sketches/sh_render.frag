@@ -4,6 +4,7 @@ precision highp float;
 uniform sampler2D tex;
 uniform vec2 resolution;
 uniform float time;
+uniform float rand;
 uniform float sketchStrength;
 
 out vec4 fragColor;
@@ -15,7 +16,7 @@ float hash(vec2 p) {
 }
 
 vec3 whiteNoise(vec2 uv) {
-    float n = hash(floor(uv * resolution.x / 2.0) + time);
+    float n = hash(floor(uv * resolution.x / 2.0) + rand);
     vec3 nz = vec3(step(0.85, n));
     return nz * 0.5;
 }

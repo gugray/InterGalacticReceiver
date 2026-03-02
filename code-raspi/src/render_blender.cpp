@@ -8,6 +8,7 @@
 #include "sketches/sketch_base.h"
 
 // Global
+#include <stdlib.h>
 
 RenderBlender::RenderBlender()
 {
@@ -29,11 +30,13 @@ void RenderBlender::render(double time)
     GLint tex_loc = glGetUniformLocation(render_prog, "tex");
     GLint resolution_loc = glGetUniformLocation(render_prog, "resolution");
     GLint time_loc = glGetUniformLocation(render_prog, "time");
+    GLint rand_loc = glGetUniformLocation(render_prog, "rand");
     GLint sketch_strength_loc = glGetUniformLocation(render_prog, "sketchStrength");
 
     glUniform1i(tex_loc, 0);
     glUniform2f(resolution_loc, (float)W, (float)H);
     glUniform1f(time_loc, (float)time);
+    glUniform1f(rand_loc, (float)((double)rand() / RAND_MAX));
 
     float sketchStrength = 0; // static
     if (mode == bmInfo) sketchStrength = 0.2;
