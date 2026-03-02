@@ -27,7 +27,7 @@ static std::vector<SketchBase *> sketches;
 static int sketch_ix = -1;
 
 static void init_stations(GLuint render_fbo);
-static void update_station(TuningFeedback &tfb, RenderBlender &renderer, double current_time);
+static bool update_station(TuningFeedback &tfb, RenderBlender &renderer, double current_time);
 
 void main_igr()
 {
@@ -51,10 +51,12 @@ void main_igr()
         double dt = current_time - last_time;
         last_time = current_time;
 
-        update_station(tfb, renderer, current_time);
+        bool render_sketch = update_station(tfb, renderer, current_time);
         if (sketch_ix == -1) continue;
 
-        sketches[sketch_ix]->frame(dt);
+        if (render_sketch)
+            sketches[sketch_ix]->frame(dt);
+
         renderer.render(current_time);
         put_on_screen();
         fps.frame_end();
@@ -86,7 +88,7 @@ void init_stations(GLuint render_fbo)
     add_station<AnomalySketch>(render_fbo, 920);
 }
 
-void update_station(TuningFeedback &tfb, RenderBlender &renderer, double current_time)
+bool update_station(TuningFeedback &tfb, RenderBlender &renderer, double current_time)
 {
     int station_ix;
     TuneStatus tuner_status;
@@ -98,7 +100,7 @@ void update_station(TuningFeedback &tfb, RenderBlender &renderer, double current
     // station_ix = 5;
     // tuner_status = tsTuned;
 
-    if (station_ix < -1) return;
+    if (station_ix < -1) return false;
 
     if (station_ix != sketch_ix && sketch_ix != -1)
     {
@@ -107,9 +109,16 @@ void update_station(TuningFeedback &tfb, RenderBlender &renderer, double current
     }
     sketch_ix = station_ix;
 
+    bool render_sketch = true;
     if (tuner_status == tsTuned)
         renderer.set_mode(bmSketch);
     else if (tuner_status == tsAbove || tuner_status == tsBelow)
         renderer.set_mode(bmInfo);
-    else renderer.set_mode(bmStatic);
+    else
+    {
+        render_sketch = false;
+        renderer.set_mode(bmStatic);
+    }
+
+    return render_sketch;
 }
