@@ -1,7 +1,8 @@
 #version 310 es
 precision highp float;
 
-uniform sampler2D tex;
+uniform sampler2D texSketch;
+uniform sampler2D texOverlay;
 uniform vec2 resolution;
 uniform float time;
 uniform float rand;
@@ -27,6 +28,9 @@ void main() {
 
     if(sketchStrength == 0.0)
         fragColor.rgb = whiteNoise(uv);
-    else
-        fragColor.rgb = texture(tex, uv).rgb * sketchStrength;
+    else {
+        fragColor.rgb = texture(texSketch, uv).rgb * sketchStrength;
+        if(sketchStrength < 1.0)
+            fragColor.rgb += texture(texOverlay, uv).rgb;
+    }
 }

@@ -18,6 +18,7 @@ class RenderBlender
     GLuint render_fbo = 0;
     GLuint render_prog = 0;
     GLuint render_vbo = 0;
+    GLuint overlay_tex = 0;
     BlendMode mode = bmStatic;
 
   private:
@@ -27,6 +28,7 @@ class RenderBlender
     RenderBlender();
     GLuint fbo() const { return render_fbo; }
     void set_mode(BlendMode mode);
+    void set_overlay(const uint8_t *px_data);
     void render(double time);
 };
 

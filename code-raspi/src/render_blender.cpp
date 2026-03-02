@@ -14,6 +14,7 @@ RenderBlender::RenderBlender()
 {
     SketchBase::create_target_texture(W, H, render_tex, render_fbo, render_depth);
     compile_render_prog();
+    overlay_tex = SketchBase::create_texture(nullptr, W, H);
 }
 
 void RenderBlender::render(double time)
@@ -27,13 +28,18 @@ void RenderBlender::render(double time)
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, render_tex);
 
-    GLint tex_loc = glGetUniformLocation(render_prog, "tex");
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, overlay_tex);
+
+    GLint tex_sketch_loc = glGetUniformLocation(render_prog, "texSketch");
+    GLint tex_overlay_loc = glGetUniformLocation(render_prog, "texOverlay");
     GLint resolution_loc = glGetUniformLocation(render_prog, "resolution");
     GLint time_loc = glGetUniformLocation(render_prog, "time");
     GLint rand_loc = glGetUniformLocation(render_prog, "rand");
     GLint sketch_strength_loc = glGetUniformLocation(render_prog, "sketchStrength");
 
-    glUniform1i(tex_loc, 0);
+    glUniform1i(tex_sketch_loc, 0);
+    glUniform1i(tex_overlay_loc, 1);
     glUniform2f(resolution_loc, (float)W, (float)H);
     glUniform1f(time_loc, (float)time);
     glUniform1f(rand_loc, (float)((double)rand() / RAND_MAX));
@@ -80,4 +86,11 @@ void RenderBlender::compile_render_prog()
 void RenderBlender::set_mode(BlendMode mode)
 {
     this->mode = mode;
+}
+
+void RenderBlender::set_overlay(const uint8_t *px_data)
+{
+    glBindTexture(GL_TEXTURE_2D, overlay_tex);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, W, H, GL_RGBA, GL_UNSIGNED_BYTE, px_data);
 }

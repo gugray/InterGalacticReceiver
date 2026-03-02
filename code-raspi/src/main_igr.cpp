@@ -5,9 +5,11 @@
 #include "fps.h"
 #include "hardware_controller.h"
 #include "horrors.h"
+#include "info_overlay.h"
 #include "magic.h"
 #include "render_blender.h"
 #include "sketch_base.h"
+#include "sketch_info.h"
 #include "tuner.h"
 #include "tuning_feedback.h"
 
@@ -24,13 +26,16 @@
 
 static Tuner tuner(false);
 static std::vector<SketchBase *> sketches;
+static std::vector<int> freqs;
 static int sketch_ix = -1;
 
 static void init_stations(GLuint render_fbo);
-static bool update_station(TuningFeedback &tfb, RenderBlender &renderer, double current_time);
+static bool update_station(TuningFeedback &tfb, InfoOverlay &overlay, RenderBlender &renderer, double current_time);
 
 void main_igr()
 {
+    InfoOverlay overlay(W, H);
+
     RenderBlender renderer;
     init_stations(renderer.fbo());
 
@@ -51,7 +56,7 @@ void main_igr()
         double dt = current_time - last_time;
         last_time = current_time;
 
-        bool render_sketch = update_station(tfb, renderer, current_time);
+        bool render_sketch = update_station(tfb, overlay, renderer, current_time);
         if (sketch_ix == -1) continue;
 
         if (render_sketch)
@@ -76,6 +81,7 @@ void add_station(GLuint render_fbo, int freq)
     sketch->init();
     tuner.add_station(freq);
     sketches.push_back(sketch);
+    freqs.push_back(freq);
 }
 
 void init_stations(GLuint render_fbo)
@@ -88,26 +94,38 @@ void init_stations(GLuint render_fbo)
     add_station<AnomalySketch>(render_fbo, 920);
 }
 
-bool update_station(TuningFeedback &tfb, RenderBlender &renderer, double current_time)
+bool update_station(TuningFeedback &tfb, InfoOverlay &overlay, RenderBlender &renderer, double current_time)
 {
-    int station_ix;
+    int new_ix;
     TuneStatus tuner_status;
-    tuner.get_status(station_ix, tuner_status);
+    tuner.get_status(new_ix, tuner_status);
 
     tfb.tune_status(tuner_status);
 
     // DBG
-    // station_ix = 5;
+    // new_ix = 5;
     // tuner_status = tsTuned;
 
-    if (station_ix < -1) return false;
+    if (new_ix < -1) return false;
 
-    if (station_ix != sketch_ix && sketch_ix != -1)
+    // Unload previous sketch, load new one
+    if (new_ix != sketch_ix && sketch_ix != -1)
     {
         sketches[sketch_ix]->unload(current_time);
-        sketches[station_ix]->reload(current_time);
+        sketches[new_ix]->reload(current_time);
     }
-    sketch_ix = station_ix;
+    // If sketch changes: render overlay
+    if (new_ix != sketch_ix)
+    {
+        // Render info overlay
+        SketchInfo ski;
+        ski.creator = "hamoid";
+        ski.title = "UN3091";
+        const uint8_t *px_data = overlay.render(ski, freqs[new_ix]);
+        // Give image to renderer
+        renderer.set_overlay(px_data);
+    }
+    sketch_ix = new_ix;
 
     bool render_sketch = true;
     if (tuner_status == tsTuned)
