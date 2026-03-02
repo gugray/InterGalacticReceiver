@@ -2,8 +2,6 @@
 
 // Local dependencies
 #include "error.h"
-#include "main.h"
-#include "magic.h"
 
 // Global
 #include <csignal>
@@ -12,11 +10,7 @@
 #include <cstring>
 #include <dirent.h>
 #include <fcntl.h>
-#include <fstream>
 #include <unistd.h>
-#if HAS_SDL2
-#include <SDL2/SDL.h>
-#endif
 
 int drm_fd = -1;
 drmModeRes *resources = nullptr;
@@ -32,52 +26,9 @@ EGLSurface egl_surf = EGL_NO_SURFACE;
 gbm_bo *bo = nullptr;
 uint32_t fb_id = 0;
 uint32_t prev_fb_id = 0;
-bool kms_scanout_enabled = true;
-bool use_sdl_window = false;
-#if HAS_SDL2
-static SDL_Window *sdl_window = nullptr;
-static SDL_GLContext sdl_gl_ctx = nullptr;
-#endif
-
-static bool is_raspberry_pi()
-{
-    std::ifstream model_file("/sys/firmware/devicetree/base/model");
-    if (!model_file.good()) model_file.open("/proc/device-tree/model");
-    if (!model_file.good()) return false;
-    std::string model;
-    std::getline(model_file, model, '\0');
-    return model.find("Raspberry Pi") != std::string::npos;
-}
-
-bool should_use_drm_backend()
-{
-#if !HAS_SDL2
-    // If SDL is not compiled in, DRM is the only available backend.
-    return true;
-#endif
-    return is_raspberry_pi();
-}
 
 void cleanup_horrors()
 {
-    if (use_sdl_window)
-    {
-#if HAS_SDL2
-        if (sdl_gl_ctx != nullptr)
-        {
-            SDL_GL_DeleteContext(sdl_gl_ctx);
-            sdl_gl_ctx = nullptr;
-        }
-        if (sdl_window != nullptr)
-        {
-            SDL_DestroyWindow(sdl_window);
-            sdl_window = nullptr;
-        }
-        SDL_QuitSubSystem(SDL_INIT_VIDEO);
-#endif
-        use_sdl_window = false;
-    }
-
     if (bo)
     {
         // Remove fb and release BO
@@ -211,7 +162,7 @@ static void init_egl()
         THROWF("eglMakeCurrent failed: %d", eglGetError());
 }
 
-static bool set_crtc(drmModeModeInfo mode, uint32_t fb_id)
+static void set_crtc(drmModeModeInfo mode, uint32_t fb_id)
 {
     uint32_t crtc_id = 0;
     // Prefer encoder's crtc, else first available
@@ -221,66 +172,11 @@ static bool set_crtc(drmModeModeInfo mode, uint32_t fb_id)
     if (!crtc_id) THROWF("No available CRTC");
 
     int ret = drmModeSetCrtc(drm_fd, crtc_id, fb_id, 0, 0, &conn->connector_id, 1, &mode);
-    if (ret)
-    {
-        if (errno == EACCES || errno == EPERM)
-        {
-            fprintf(stderr,
-                    "drmModeSetCrtc denied (%d: %s). Continuing without KMS scanout.\n",
-                    errno, strerror(errno));
-            return false;
-        }
-        THROWF_ERRNO("drmModeSetCrtc failed");
-    }
-    return true;
+    if (ret) THROWF_ERRNO("drmModeSetCrtc failed");
 }
-
-#if HAS_SDL2
-static void init_sdl_window()
-{
-    if (SDL_Init(SDL_INIT_VIDEO) != 0)
-        THROWF("SDL_Init failed: %s", SDL_GetError());
-
-    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES) != 0 ||
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2) != 0 ||
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0) != 0 ||
-        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1) != 0)
-    {
-        THROWF("SDL_GL_SetAttribute failed: %s", SDL_GetError());
-    }
-
-    sdl_window = SDL_CreateWindow("igr",
-                                  SDL_WINDOWPOS_CENTERED,
-                                  SDL_WINDOWPOS_CENTERED,
-                                  W,
-                                  H,
-                                  SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
-    if (sdl_window == nullptr)
-        THROWF("SDL_CreateWindow failed: %s", SDL_GetError());
-
-    sdl_gl_ctx = SDL_GL_CreateContext(sdl_window);
-    if (sdl_gl_ctx == nullptr)
-        THROWF("SDL_GL_CreateContext failed: %s", SDL_GetError());
-
-    SDL_GL_SetSwapInterval(1);
-    use_sdl_window = true;
-    printf("Using SDL2 window backend (%dx%d).\n", W, H);
-}
-#endif
 
 void init_horrors(const char *device_path)
 {
-    if (!should_use_drm_backend())
-    {
-#if HAS_SDL2
-        init_sdl_window();
-        return;
-#else
-        THROWF("Desktop output requires SDL2, but this binary was built without SDL2 support");
-#endif
-    }
-
-    kms_scanout_enabled = true;
     printf("Initializing video device: %s\n", device_path);
     drm_fd = open(device_path, O_RDWR | O_CLOEXEC);
     if (drm_fd < 0) THROWF_ERRNO("Failed to open device '%s'", device_path);
@@ -366,24 +262,9 @@ char *find_display_device()
 
 void put_on_screen()
 {
-    if (use_sdl_window)
-    {
-#if HAS_SDL2
-        SDL_Event event;
-        while (SDL_PollEvent(&event))
-        {
-            if (event.type == SDL_QUIT) app_running = false;
-        }
-        SDL_GL_SwapWindow(sdl_window);
-        return;
-#endif
-    }
-
     // Swap EGL buffers
     if (!eglSwapBuffers(egl_display, egl_surf))
         THROWF("eglSwapBuffers failed: %d", eglGetError());
-
-    if (!kms_scanout_enabled) return;
 
     // Get new buffer
     gbm_bo *new_bo = gbm_surface_lock_front_buffer(gbm_surf);
@@ -406,14 +287,7 @@ void put_on_screen()
     }
 
     // Set new framebuffer before releasing old buffer
-    if (!set_crtc(mode, new_fb_id))
-    {
-        // Keep app running without direct KMS output.
-        kms_scanout_enabled = false;
-        drmModeRmFB(drm_fd, new_fb_id);
-        gbm_surface_release_buffer(gbm_surf, new_bo);
-        return;
-    }
+    set_crtc(mode, new_fb_id);
 
     // Now safe to release old buffer and remove old FB
     if (bo) gbm_surface_release_buffer(gbm_surf, bo);
