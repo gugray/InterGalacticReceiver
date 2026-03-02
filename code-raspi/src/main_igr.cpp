@@ -41,7 +41,9 @@ void main_igr()
 
     FPS fps(TARGET_FPS);
     double last_time = fps.frame_start();
-    // fps.log_fps = true; // DBG
+    fps.log_fps = true;
+
+    HardwareController::set_light(true);
 
     while (app_running)
     {
@@ -59,8 +61,6 @@ void main_igr()
 
         int tuner, aknob, bknob, cknob, swtch;
         HardwareController::get_values(tuner, aknob, bknob, cknob, swtch);
-        // DBG: Don't turn on light
-        // HardwareController::set_light(swtch == 0);
     }
 }
 
