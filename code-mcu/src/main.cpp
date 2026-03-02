@@ -127,16 +127,19 @@ ISR(TCB0_INT_vect)
             vibe_action = 0;
     }
 
+    // Both LEDs off
     if (led_action == 0)
     {
         digitalWrite(LEDA_PIN, HIGH);
         digitalWrite(LEDB_PIN, HIGH);
     }
+    // Both LEDs on
     else if (led_action == 1)
     {
         digitalWrite(LEDA_PIN, LOW);
         digitalWrite(LEDB_PIN, LOW);
     }
+    // LEDs pumming together
     else if (led_action == 2)
     {
         if (led_counter == 0) led_duty = 256;
@@ -264,8 +267,20 @@ void handleCommand(uint8_t cmd)
     {
         cli();
         led_action = cmd - 0x30;
-        led_counter = 0;
-        led_duty = 256;
+        // Turn off both LEDs, so no previous state lingers
+        digitalWrite(LEDA_PIN, HIGH);
+        digitalWrite(LEDB_PIN, HIGH);
+        // Pumming should not happen immediately; blinking, yes
+        if (cmd == 0x32)
+        {
+            led_counter = 1250;
+            led_duty = 0;
+        }
+        else
+        {
+            led_counter = 0;
+            led_duty = 256;
+        }
         pwm_counter = 0;
         sei();
     }
