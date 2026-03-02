@@ -16,7 +16,7 @@ struct InputReadings
 #pragma pack(pop)
 
 static const int recvBufSz = 8;
-static const int sendBufSz = 10;
+static const int sendBufSz = 16;
 
 static volatile uint8_t recvBuf[recvBufSz];
 static volatile int recvBufPtr = 0;
@@ -220,9 +220,12 @@ void handleCommand(uint8_t cmd)
         data.bKnob = bKnobLog.getAvg();
         data.cKnob = cKnobLog.getAvg();
         data.swtch = swtch;
-        sendBytes = sizeof(InputReadings);
-        if (sendBufSz < sendBytes) sendBytes = sendBufSz;
+        sendBytes = sizeof(InputReadings) + 1;
         memcpy((void *)sendBuf, &data, sendBytes);
+        uint8_t check = 0;
+        for (int i = 0; i < sendBytes - 2; ++i)
+            check ^= sendBuf[i];
+        sendBuf[sendBytes - 1] = check;
         sei();
     }
     else if (cmd == 0x10) // light off
