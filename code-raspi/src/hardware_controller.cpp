@@ -9,6 +9,7 @@
 // Global
 #include <errno.h>
 #include <fcntl.h>
+#include <fstream>
 #include <linux/i2c-dev.h>
 #include <stdio.h>
 #include <string.h>
@@ -21,12 +22,26 @@ pthread_t HardwareController::thread;
 pthread_mutex_t HardwareController::mut;
 std::vector<uint8_t> HardwareController::commands;
 bool HardwareController::quitting = false;
+bool HardwareController::enabled = false;
+bool HardwareController::mutex_ready = false;
 int HardwareController::val_tuner;
 int HardwareController::val_aknob;
 int HardwareController::val_bknob;
 int HardwareController::val_cknob;
 int HardwareController::val_swtch;
 IValueListener *HardwareController::tuner = nullptr;
+
+static bool is_raspberry_pi()
+{
+    // On Raspberry Pi this file is usually present and contains a model string.
+    const char *model_path = "/sys/firmware/devicetree/base/model";
+    std::ifstream model_file(model_path);
+    if (!model_file.good()) return false;
+
+    std::string model;
+    std::getline(model_file, model, '\0');
+    return model.find("Raspberry Pi") != std::string::npos;
+}
 
 #pragma pack(push, 1)
 struct InputReadings
@@ -41,6 +56,15 @@ struct InputReadings
 
 void HardwareController::init()
 {
+    quitting = false;
+    enabled = false;
+    bool on_raspi = is_raspberry_pi();
+    if (!on_raspi)
+    {
+        printf("Hardware controller disabled: not running on Raspberry Pi.\n");
+        return;
+    }
+
     // Open I2C bus
     char *filename = (char *)I2C_NODE;
     if ((file_i2c = open(filename, O_RDWR)) < 0)
@@ -63,6 +87,7 @@ void HardwareController::init()
         deinit();
         THROWF("Failed to initialize mutex: %d: %s", r, strerror(r));
     }
+    mutex_ready = true;
 
     // Start worker thread
     r = pthread_create(&thread, NULL, loop, NULL);
@@ -72,6 +97,7 @@ void HardwareController::init()
         THROWF("Failed to create thread: %d: %s", r, strerror(r));
     }
     pthread_detach(thread);
+    enabled = true;
 }
 
 void HardwareController::deinit()
@@ -80,6 +106,8 @@ void HardwareController::deinit()
     {
         if (file_i2c != -1) close(file_i2c);
         file_i2c = -1;
+        mutex_ready = false;
+        enabled = false;
     }
     catch (...)
     {
@@ -201,6 +229,7 @@ void HardwareController::get_values(int &tuner, int &aknob, int &bknob, int &ckn
 
 void HardwareController::set_light(bool on)
 {
+    if (!enabled || !mutex_ready) return;
     uint8_t cmd = on ? 0x11 : 0x10;
     Lock lock(&mut);
     commands.push_back(cmd);
@@ -208,6 +237,7 @@ void HardwareController::set_light(bool on)
 
 void HardwareController::buzz(BuzzType bt)
 {
+    if (!enabled || !mutex_ready) return;
     Lock lock(&mut);
     if (bt == btBeepBeep) commands.push_back(0x20);
     else if (bt == btBoop) commands.push_back(0x21);
@@ -215,6 +245,7 @@ void HardwareController::buzz(BuzzType bt)
 
 void HardwareController::set_led(LEDAction action)
 {
+    if (!enabled || !mutex_ready) return;
     Lock lock(&mut);
     if (action == laOff) commands.push_back(0x30);
     else if (action == laOn) commands.push_back(0x31);

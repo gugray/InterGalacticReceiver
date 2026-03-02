@@ -22,6 +22,7 @@ extern gbm_bo *bo;
 extern uint32_t fb_id, prev_fb_id;
 
 char *find_display_device();
+bool should_use_drm_backend();
 void init_horrors(const char *device_path);
 void put_on_screen();
 void cleanup_horrors();

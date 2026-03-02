@@ -4,6 +4,21 @@ CXX_FLAGS = -std=c++11 -Wall -O3 -march=native -funroll-loops -fstrict-aliasing
 INCLUDES 	= -I/usr/include/drm -I/usr/include/libdrm -Isrc/sketches -Isrc
 LIBS     	= -lEGL -lGLESv2 -lgbm -ldrm -lpthread -lm
 
+SDL2_CFLAGS := $(shell pkg-config --cflags sdl2 2>/dev/null)
+SDL2_LIBS := $(shell pkg-config --libs sdl2 2>/dev/null)
+RASPI_BUILD ?= $(shell [ -r /sys/firmware/devicetree/base/model ] && grep -aq "Raspberry Pi" /sys/firmware/devicetree/base/model && echo 1 || echo 0)
+ifneq ($(RASPI_BUILD),1)
+ifneq ($(strip $(SDL2_LIBS)),)
+CXX_FLAGS += -DHAS_SDL2=1
+INCLUDES  += $(SDL2_CFLAGS)
+LIBS      += $(SDL2_LIBS)
+else
+CXX_FLAGS += -DHAS_SDL2=0
+endif
+else
+CXX_FLAGS += -DHAS_SDL2=0
+endif
+
 BIN 			= igr
 SRC_DIR 	= ./src
 BIN_DIR 	= ./bin
@@ -44,6 +59,4 @@ shaders:
 .PHONY : clean
 clean :
 	rm -rf -- $(OUT_DIR) $(BIN_DIR)/$(BIN)
-
-
 

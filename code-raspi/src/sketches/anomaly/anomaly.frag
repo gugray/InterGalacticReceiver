@@ -1,211 +1,116 @@
 #version 310 es
-precision highp float;
+precision mediump float;
 
-uniform float time;
-uniform vec2 resolution;
+uniform vec3 cameraPos;
+uniform vec4 cameraBasis;
+uniform vec2 hashOffset;
+in vec2 vXZ;
 out vec4 fragColor;
 
 const float rayGravity = 0.25;
 const float terrainHeight = 5.0;
 
-const float PI = 3.14159265358979323846;
-const float halfPI = 0.5 * PI;
-const int MAX_STEPS = 9;
+const int MAX_STEPS = 7;
+const highp vec2 LATTICE_K = vec2(0.754877666, 0.569840291);
 
-vec2 mod289(vec2 x) {
-    return x - floor(x * (1.0 / 289.0)) * 289.0;
+float hash21(highp vec2 p) {
+  p = fract(p * vec2(123.34, 456.21));
+  p += dot(p, p.yx + 33.33);
+  return fract(p.x * p.y);
 }
 
-vec3 mod289(vec3 x) {
-    return x - floor(x * (1.0 / 289.0)) * 289.0;
-}
-
-vec3 permute(vec3 x) {
-    return mod289(((x * 34.0) + 10.0) * x);
-}
-
-float snoise2d(vec2 v) {
-    const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
-    vec2 i = floor(v + dot(v, C.yy));
-    vec2 x0 = v - i + dot(i, C.xx);
-    vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-    vec4 x12 = x0.xyxy + C.xxzz;
-    x12.xy -= i1;
-
-    i = mod289(i);
-    vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
-
-    vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0);
-    m = m * m;
-    m = m * m;
-
-    vec3 x = 2.0 * fract(p * C.www) - 1.0;
-    vec3 h = abs(x) - 0.5;
-    vec3 ox = floor(x + 0.5);
-    vec3 a0 = x - ox;
-
-    m *= 1.79284291400159 - 0.85373472095314 * (a0 * a0 + h * h);
-
-    vec3 g;
-    g.x = a0.x * x0.x + h.x * x0.y;
-    g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-    return 130.0 * dot(m, g);
-}
-
-// Cheaper 2D simplex – approximate permute + weaker mod
-vec3 mod289v(vec3 x) {
-    return x - floor(x * (1.0 / 289.0)) * 289.0;
-}
-vec3 permuteCheap(vec3 x) {
-    return mod289v((34.0 * x + 10.0) * x);   // keep one mod, or fract it
-    // or ultra-cheap: return fract(x * x * 34.0 + x);
-}
-
-float snoise2d_cheap(vec2 v) {
-    const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
-    vec2 i = floor(v + dot(v, C.yy));
-    vec2 x0 = v - i + dot(i, C.xx);
-
-    vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-
-    vec4 x12 = x0.xyxy + C.xxzz;
-    x12.xy -= i1;
-
-    // Cheaper permute chain
-    // vec3 pi = mod289v(vec3(i, 1.0));   // weaker or remove
-    vec3 p = permuteCheap(permuteCheap(vec3(i.y, i.y + i1.y, i.y + 1.0)) + vec3(i.x, i.x + i1.x, i.x + 1.0));
-
-    vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0);
-    m = m * m;
-    m = m * m;
-
-    vec3 x = fract(p * C.www) * 2.0 - 1.0;
-    vec3 h = abs(x) - 0.5;
-    vec3 ox = floor(x + 0.5);
-    vec3 a0 = x - ox;
-
-    m *= 1.79284291400159 - 0.85373472095314 * (a0 * a0 + h * h);
-
-    vec3 g;
-    g.x = a0.x * x0.x + h.x * x0.y;
-    g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-    return 130.0 * dot(m, g);
-}
-
-float hash2d_blocky(vec2 p, float freq) {
-    p *= freq;                      // frequency / scale
-    p = floor(p);                   // ← this is the key: snap to integer grid
-    p *= vec2(0.3183099, 0.3678794);
-    p += p.yx * 17.0 + p.xy;
-    return fract(p.x * p.y * (p.x + p.y));
+float noise2d(vec2 p) {
+  highp vec2 i = floor(p);
+  highp vec2 f = fract(p);
+  highp vec2 u = f * f * (3.0 - 2.0 * f);
+  highp float h00 = fract(dot(i, LATTICE_K));
+  mediump float a = float(h00);
+  mediump float b = float(fract(h00 + LATTICE_K.x));
+  mediump float c = float(fract(h00 + LATTICE_K.y));
+  mediump float d = float(fract(h00 + LATTICE_K.x + LATTICE_K.y));
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
 
 float surface(vec2 p) {
-    float noise1 = snoise2d_cheap(p);
-    p.x += noise1;
-    float noise2 = snoise2d_cheap(p * 2.); // second octave
-    return (noise1 + noise2 * 0.5) * 0.33 + 0.5;
-}
-
-float fbmAdaptiveLoop(vec2 p, float distance) {
-    float value = 0.0;
-    float amplitude = 0.5;
-    float frequency = 1.0;
-    float noise = 0.;
-
-    vec2 offset = vec2(0, 0);
-    for(int i = 0; i < 2; i++) {
-        if(amplitude * terrainHeight < 0.1 * distance)
-            break;
-        // value += amplitude * (snoise2d(p * frequency) * 0.5 + 0.5);
-        // value += amplitude * (hash2d_blocky(p, frequency));
-        noise = snoise2d_cheap((p + vec2(noise, 0)) * frequency);
-        value += amplitude * (noise * 0.5 + 0.5);
-        frequency *= 2.0;
-        amplitude *= 0.5;
-    }
-
-    return value;
+  float n1 = noise2d(p);
+  float n1x2 = n1 + n1;
+  p.y += n1x2;
+  float n2 = noise2d(p + p);
+  return (n1x2 + n2) * 0.333333;
 }
 
 float sdf(vec3 p) {
-    float height = -surface(p.xz * 0.3) * terrainHeight; 
-
-    // height = (1. + boost * 3.) * height + terrainHeight * boost; 
-
-    return p.y - height;
+  // Match old precomputed texture frequency:
+  // uvScale(0.0087) * texSize(512) * octave0Scale(1/16) = 0.2784
+  float n = clamp(surface(p.xz * 0.4784), 0.0, 1.0);
+  float height = -float(n) * terrainHeight;
+  return p.y - height;
 }
 
-float cheapHash(vec2 p, float time) {
-    p = p * 1.0 + time * 0.001;
-    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-}
-
-float artifactHash(vec2 p, float time) {
-    p = p * 100. + time * 0.005;                    // animate cheaply
-    return abs(fract(p.x * p.y + p.x + p.y) * 2. - 1.);
+float cheapHash(highp vec2 p) {
+  p = fract((p + hashOffset) * vec2(123.34, 456.21));
+  p += dot(p, p + 23.45);
+  return fract(p.x * p.y);
 }
 
 void main() {
-    vec2 uv = gl_FragCoord.xy / resolution;
+  vec2 xz = vXZ;
 
-    float aspectRatio = resolution.x / resolution.y;
-    const float invCornerRadius = 1.0 / 1.60078125;
+  float uvRnd = cheapHash(xz); 
 
-    vec2 screenUV = uv * 2.0 - 1.0;
-    screenUV.x *= aspectRatio;
-    vec2 xz = screenUV * invCornerRadius;
+  float radiusSquared = dot(xz, xz);
+  float y = -sqrt(max(1.0 - radiusSquared, 0.0));
+  vec3 eyeDirection = vec3(xz.x, y, xz.y);
 
-    float uvRnd = cheapHash(xz, time);
+  vec2 up = cameraBasis.xy;
+  vec2 right = cameraBasis.zw;
+  eyeDirection.xz = vec2(
+    up.x * eyeDirection.z + right.x * eyeDirection.x, 
+    up.y * eyeDirection.z + right.y * eyeDirection.x
+  ); 
 
-    float radiusSquared = dot(xz, xz);
-    float y = -sqrt(1.0 - radiusSquared);
-    vec3 eyeDirection = vec3(xz.x, y, xz.y);
+  float skipDistance = cameraPos.y;
+  vec3 pos = cameraPos + eyeDirection * skipDistance;
+  float depth = skipDistance;
 
-    vec3 cameraPos = vec3(time, 2, 0); 
-    // rotation 
-    float rt = sin(time * 0.3);
-    vec2 up = vec2(sin(rt), cos(rt));
-    vec2 right = vec2(up.y, -up.x);
-    eyeDirection.xz = vec2(up.x * eyeDirection.z + right.x * eyeDirection.x, up.y * eyeDirection.z + right.y * eyeDirection.x);
+  vec3 rayDir = eyeDirection + vec3(0, rayGravity * skipDistance, 0);
+  rayDir *= inversesqrt(dot(rayDir, rayDir));
 
-    float skipDistance = cameraPos.y;
-    vec3 pos = cameraPos + eyeDirection * skipDistance;
-    float depth = skipDistance;
+  float stepSize = 0.65 + 0.25 * uvRnd; 
 
-    vec3 rayDir = normalize(eyeDirection + vec3(0, rayGravity * skipDistance, 0));
+  for (int i = 0; i < MAX_STEPS; i++) {
+    float dist = sdf(pos);
+    float step = dist * stepSize; 
+    depth += step;
+    pos += rayDir * step;
 
-    float stepSize = 0.7 + 0.2 * uvRnd;
+    rayDir.y += rayGravity * step * 0.5;
+    // if(depth > 50. || step < 0.001) break; // early exit makes it worse
+  }
 
-    for(int i = 0; i < MAX_STEPS; i++) {
-        float dist = sdf(pos);
-        float step = dist * stepSize;
-        depth += step;
-        pos += rayDir * step;
+  depth = max(0., depth); 
 
-        rayDir.y += rayGravity * step * 0.5;
-        if(depth > 50.)
-            break;
-    }
+  float invTerrainHeight = 1.0 / terrainHeight;
+  float heightFactor = clamp((pos.y + terrainHeight) * invTerrainHeight, 0.0, 1.0);
 
-    depth = max(0., depth);
+  float hfsquare = heightFactor * heightFactor; 
+  float invhf = 1. - heightFactor; 
+  float invhfsquare = invhf * invhf; 
 
-    float heightFactor = clamp((pos.y + terrainHeight) / terrainHeight, 0.0, 1.0);
+  vec3 terrainColor = vec3(
+    heightFactor, 
+    0, 
+    invhfsquare * 1.3
+  ); 
 
-    float hfsquare = heightFactor * heightFactor;
-    float invhf = 1. - heightFactor;
-    float invhfsquare = invhf * invhf;
+  terrainColor *= 1. - invhfsquare; 
+  terrainColor = mix(terrainColor, vec3(1), hfsquare * hfsquare); 
+  terrainColor *= abs(fract(heightFactor * 70.) - 0.5) + 0.7; 
 
-    vec3 terrainColor = vec3(heightFactor, 0, invhfsquare * 1.3);
+  vec3 skyColor = vec3(-0.2,-0.1,0);
 
-    terrainColor *= 1. - invhfsquare;
-    terrainColor = mix(terrainColor, vec3(1), hfsquare * hfsquare);
-    terrainColor *= abs(fract(heightFactor * 70.) - 0.5) + 0.7;
+  float fog = 1. - 5. / (depth - terrainHeight * 0.5 + 5.0);
+  vec3 color = clamp(mix(terrainColor * 2., skyColor, fog), 0., 1.); 
 
-    vec3 skyColor = vec3(-0.2, -0.1, 0);
-
-    float fog = 1. - 5. / (depth - terrainHeight * 0.5 + 5.0);
-    vec3 color = clamp(mix(terrainColor * 2., skyColor, fog), 0., 1.);
-
-    fragColor = vec4(color, 1.0);
+  fragColor = vec4(color, 1.0);
 }

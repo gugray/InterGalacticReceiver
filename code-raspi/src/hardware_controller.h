@@ -33,6 +33,8 @@ class HardwareController
     static pthread_mutex_t mut;
     static std::vector<uint8_t> commands;
     static bool quitting;
+    static bool enabled;
+    static bool mutex_ready;
     static int val_tuner;
     static int val_aknob;
     static int val_bknob;

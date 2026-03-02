@@ -5,4 +5,8 @@ constexpr const char *anomaly_frag = R"(
 SRC anomaly.frag
 )";
 
+constexpr const char *anomaly_vert = R"(
+SRC anomaly.vert
+)";
+
 #endif
