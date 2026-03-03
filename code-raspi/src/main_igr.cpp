@@ -17,6 +17,7 @@
 #include "sketches/anomaly/anomaly_sketch.h"
 #include "sketches/bezix/bezix_sketch.h"
 #include "sketches/cell/cell_sketch.h"
+#include "sketches/mathperc/mathperc_sketch.h"
 #include "sketches/mmgl01/mmgl01_sketch.h"
 #include "sketches/ray/ray_sketch.h"
 #include "sketches/star/star_sketch.h"
@@ -92,6 +93,7 @@ void add_station(GLuint render_fbo, int freq)
 
 void init_stations(GLuint render_fbo)
 {
+    add_station<MathPercSketch>(render_fbo, 993);
     add_station<StarSketch>(render_fbo, 980);
     add_station<MMGL01Sketch>(render_fbo, 967);
     add_station<RaySketch>(render_fbo, 953);

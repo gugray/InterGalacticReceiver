@@ -7,7 +7,8 @@
 struct SketchInfo
 {
     std::string creator;
-    std::string title;
+    std::string title1;
+    std::string title2;
 };
 
 #endif

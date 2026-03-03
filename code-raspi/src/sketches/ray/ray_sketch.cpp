@@ -22,7 +22,7 @@ RaySketch::RaySketch(int w, int h, GLuint render_fbo)
 void RaySketch::get_info(SketchInfo &ski)
 {
     ski.creator = "g^b0r";
-    ski.title = "invisible solid";
+    ski.title1 = "invisible solid";
 }
 
 void RaySketch::frame(double dt)

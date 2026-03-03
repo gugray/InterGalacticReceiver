@@ -32,14 +32,27 @@ uint8_t const *InfoOverlay::render(const SketchInfo &info, uint16_t freq)
     ctx.fill_rectangle(0, 0, w, h);
     ctx.global_composite_operation = canvas_ity::source_over;
 
+    float y = 24;
     // IGR amber brand color: #e1b01b => 0.882, 0.69, 0.106
     ctx.set_color(canvas_ity::fill_style, 0.882, 0.69, 0.106, 1);
+
+    // Title Line 1
     ctx.set_font(font_data, font_data_size, sz_title);
-    snprintf(buf, buf_sz, "%s", info.title.c_str());
-    ctx.fill_text(buf, 80, 24 + sz_title);
+    y += sz_title;
+    snprintf(buf, buf_sz, "%s", info.title1.c_str());
+    ctx.fill_text(buf, 80, y);
+    // (Optional) Title Line 2
+    if (!info.title2.empty())
+    {
+        y += sz_title * 0.9;
+        snprintf(buf, buf_sz, "%s", info.title2.c_str());
+        ctx.fill_text(buf, 80, y);
+    }
     ctx.set_font(font_data, font_data_size, sz_author);
     snprintf(buf, buf_sz, "from %s", info.creator.c_str());
-    ctx.fill_text(buf, 80, 24 + sz_title * 2.2);
+    y += sz_title * 1.2;
+    ctx.fill_text(buf, 80, y);
+
     // Green color matching amber
     ctx.set_color(canvas_ity::fill_style, 0.404, 0.816, 0.522, 1);
     ctx.set_font(font_data, font_data_size, sz_freq);

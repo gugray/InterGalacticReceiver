@@ -14,7 +14,7 @@ AnomalySketch::AnomalySketch(int w, int h, GLuint render_fbo)
 void AnomalySketch::get_info(SketchInfo &ski)
 {
     ski.creator = "Fairlix";
-    ski.title = "Anomaly";
+    ski.title1 = "Anomaly";
 }
 
 void AnomalySketch::init()

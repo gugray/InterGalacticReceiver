@@ -15,5 +15,5 @@ StarSketch::StarSketch(int w, int h, GLuint render_fbo)
 void StarSketch::get_info(SketchInfo &ski)
 {
     ski.creator = "speginel";
-    ski.title = "starflux";
+    ski.title1 = "starflux";
 }
