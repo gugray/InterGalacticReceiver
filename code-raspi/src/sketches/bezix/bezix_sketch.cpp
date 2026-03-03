@@ -14,6 +14,6 @@ BezixSketch::BezixSketch(int w, int h, GLuint render_fbo)
 
 void BezixSketch::get_info(SketchInfo &ski)
 {
-    ski.creator = "Hamoid";
-    ski.title = "UN3091";
+    ski.creator = "aBe";
+    ski.title = "light intersections";
 }

@@ -48,7 +48,7 @@ void TuningFeedback::tune_status(TuneStatus status)
         {
             HardwareController::buzz(btBeepBeep);
         }
-        HardwareController::set_led(status == tsAbove ? laBlinkA : laBlinkB);
+        HardwareController::set_led(status == tsBelow ? laBlinkA : laBlinkB);
         is_pumming = false;
     }
     else
