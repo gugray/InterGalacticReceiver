@@ -6,6 +6,7 @@
 class BezixSketch : public FragSketch
 {
   public:
+    void get_info(SketchInfo &ski) override;
     BezixSketch(int w, int h, GLuint render_fbo);
 };
 

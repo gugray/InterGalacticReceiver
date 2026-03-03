@@ -8,7 +8,8 @@
 #include <stdio.h>
 #include <sys/time.h>
 
-TuningFeedback::TuningFeedback()
+TuningFeedback::TuningFeedback(bool quiet)
+    : quiet(quiet)
 {
 }
 
@@ -23,7 +24,8 @@ uint32_t TuningFeedback::get_msec()
 
 void TuningFeedback::tune_status(TuneStatus status)
 {
-    // No change: we're done here
+    // Quiet, or no change: we're done here
+    if (quiet) return;
     if (status == prev_status) return;
 
     uint32_t now = get_msec();

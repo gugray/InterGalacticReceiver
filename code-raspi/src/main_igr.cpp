@@ -32,8 +32,14 @@ static int sketch_ix = -1;
 static void init_stations(GLuint render_fbo);
 static bool update_station(TuningFeedback &tfb, InfoOverlay &overlay, RenderBlender &renderer, double current_time);
 
-void main_igr()
+void main_igr(bool quiet)
 {
+    if (quiet)
+    {
+        HardwareController::set_light(false);
+        HardwareController::set_led(laOff);
+    }
+
     InfoOverlay overlay(W, H);
 
     RenderBlender renderer;
@@ -42,13 +48,13 @@ void main_igr()
     HardwareController::set_listeners(&tuner);
     HardwareController::init();
 
-    TuningFeedback tfb;
+    TuningFeedback tfb(quiet);
 
     FPS fps(TARGET_FPS);
     double last_time = fps.frame_start();
     fps.log_fps = true;
 
-    HardwareController::set_light(true);
+    if (!quiet) HardwareController::set_light(true);
 
     while (app_running)
     {
@@ -119,8 +125,7 @@ bool update_station(TuningFeedback &tfb, InfoOverlay &overlay, RenderBlender &re
     {
         // Render info overlay
         SketchInfo ski;
-        ski.creator = "hamoid";
-        ski.title = "UN3091";
+        sketches[new_ix]->get_info(ski);
         const uint8_t *px_data = overlay.render(ski, freqs[new_ix]);
         // Give image to renderer
         renderer.set_overlay(px_data);

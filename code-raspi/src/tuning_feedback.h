@@ -7,6 +7,7 @@
 class TuningFeedback
 {
   private:
+    const bool quiet;
     uint32_t last_changed_at = 0;
     TuneStatus prev_status = tsNone;
     bool is_pumming = false;
@@ -15,7 +16,7 @@ class TuningFeedback
     static uint32_t get_msec();
 
   public:
-    TuningFeedback();
+    TuningFeedback(bool quiet);
     void tune_status(TuneStatus status);
 };
 

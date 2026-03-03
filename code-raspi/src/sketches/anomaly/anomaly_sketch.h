@@ -13,6 +13,7 @@ class AnomalySketch : public FragSketch
 
   public:
     AnomalySketch(int w, int h, GLuint render_fbo);
+    void get_info(SketchInfo &ski) override;
     void init() override;
     void frame(double dt) override;
     void unload(double current_time) override;

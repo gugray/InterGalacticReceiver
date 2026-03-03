@@ -6,7 +6,7 @@ uniform sampler2D texOverlay;
 uniform vec2 resolution;
 uniform float time;
 uniform float rand;
-uniform float sketchStrength;
+uniform int blendMode;
 
 out vec4 fragColor;
 
@@ -26,11 +26,16 @@ void main() {
     fragColor.a = 1.0;
     vec2 uv = gl_FragCoord.xy / resolution;
 
-    if(sketchStrength == 0.0)
+    // Only static
+    if(blendMode == 0) {
         fragColor.rgb = whiteNoise(uv);
+    } // Has sketch
     else {
-        fragColor.rgb = texture(texSketch, uv).rgb * sketchStrength;
-        if(sketchStrength < 1.0)
-            fragColor.rgb += texture(texOverlay, uv).rgb;
+        fragColor.rgb = texture(texSketch, uv).rgb;
+    }
+    // Mix in overlay
+    if(blendMode == 1) {
+        vec4 ovr = texture(texOverlay, uv);
+        fragColor.rgb = ovr.rgb * ovr.a + fragColor.rgb * (1.0 - ovr.a);
     }
 }

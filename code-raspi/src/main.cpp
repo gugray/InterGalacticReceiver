@@ -24,10 +24,12 @@ bool app_running = true;
 #define ACT_TUNER       "action_test_tuner"
 #define ACT_RUN         "action_run"
 #define ACT_OFF         "action_off"
+#define ARG_QUIET       "quiet"
 // clang-format on
 
 static std::string device_path;
 static std::string action;
+bool quiet;
 
 static void sighandler(int);
 static bool parse_args(int argc, const char *argv[]);
@@ -58,11 +60,11 @@ int main(int argc, const char *argv[])
         delete[] found_device;
 
         if (action == ACT_CALIBRATE) calibrate_readings();
-        else if (action == ACT_TUNER) test_tuner();
+        else if (action == ACT_TUNER) test_tuner(quiet);
         else if (action == ACT_RUN)
         {
             init_horrors(device_path.c_str());
-            main_igr();
+            main_igr(quiet);
             cleanup_horrors();
         }
         printf("\nGoodbye!\n");
@@ -100,6 +102,7 @@ static bool parse_args(int argc, const char *argv[])
     parser.add_argument(ACT_TUNER, "tuner", "test-tuner", "Action: Test tuner");
     parser.add_argument(ACT_RUN, "run", "", "Action: Run normally with sketches");
     parser.add_argument(ACT_OFF, "off", "", "Action: Turn off backlight");
+    parser.add_argument(ARG_QUIET, "-q", "--quiet", "Quiet: no lights or buzzing");
     parser.add_argument("help", "--help", "", "Displays this help message");
     parser.add_argument("dev", "", "--dev", "Device path (default: /dev/dri/card0)", STORE);
 
@@ -138,6 +141,7 @@ static bool parse_args(int argc, const char *argv[])
     }
 
     if (parser.get("dev").is_set) device_path.assign(parser.get("dev").value.c_str());
+    quiet = parser.get(ARG_QUIET).is_set;
 
     if (!ok)
     {

@@ -1,6 +1,7 @@
 #ifndef SKETCH_IF_H
 #define SKETCH_IF_H
 
+#include "../sketch_info.h"
 #include <GLES2/gl2.h>
 #include <vector>
 
@@ -25,6 +26,7 @@ class SketchBase
 
   public:
     SketchBase();
+    virtual void get_info(SketchInfo &ski);
     virtual void init() = 0;
     virtual void frame(double dt) = 0;
     virtual void unload(double current_time) {};

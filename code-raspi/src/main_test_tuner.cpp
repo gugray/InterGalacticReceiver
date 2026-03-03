@@ -17,10 +17,11 @@
 static uint8_t *font_data;
 static size_t font_data_size;
 static Tuner tuner(true);
-static TuningFeedback tfb;
 
-void test_tuner()
+void test_tuner(bool quiet)
 {
+    TuningFeedback tfb(quiet);
+
     tuner.add_station(980);
     HardwareController::set_listeners(&tuner);
     HardwareController::init();

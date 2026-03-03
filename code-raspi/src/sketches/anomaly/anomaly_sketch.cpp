@@ -11,6 +11,12 @@ AnomalySketch::AnomalySketch(int w, int h, GLuint render_fbo)
 {
 }
 
+void AnomalySketch::get_info(SketchInfo &ski)
+{
+    ski.creator = "Fairlix";
+    ski.title = "Anomaly";
+}
+
 void AnomalySketch::init()
 {
     vs = compile_shader(GL_VERTEX_SHADER, anomaly_vert);

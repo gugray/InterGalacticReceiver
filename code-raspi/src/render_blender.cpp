@@ -36,7 +36,7 @@ void RenderBlender::render(double time)
     GLint resolution_loc = glGetUniformLocation(render_prog, "resolution");
     GLint time_loc = glGetUniformLocation(render_prog, "time");
     GLint rand_loc = glGetUniformLocation(render_prog, "rand");
-    GLint sketch_strength_loc = glGetUniformLocation(render_prog, "sketchStrength");
+    GLint blend_mode_loc = glGetUniformLocation(render_prog, "blendMode");
 
     glUniform1i(tex_sketch_loc, 0);
     glUniform1i(tex_overlay_loc, 1);
@@ -44,10 +44,10 @@ void RenderBlender::render(double time)
     glUniform1f(time_loc, (float)time);
     glUniform1f(rand_loc, (float)((double)rand() / RAND_MAX));
 
-    float sketchStrength = 0; // static
-    if (mode == bmInfo) sketchStrength = 0.2;
-    else if (mode == bmSketch) sketchStrength = 1;
-    glUniform1f(sketch_strength_loc, (float)sketchStrength);
+    int blendMode = 0; // static
+    if (mode == bmInfo) blendMode = 1;
+    else if (mode == bmSketch) blendMode = 2;
+    glUniform1i(blend_mode_loc, blendMode);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, W, H);

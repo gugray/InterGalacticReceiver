@@ -8,6 +8,9 @@
 #include <math.h>
 
 static const char *font_file_name = "Anta-Regular.ttf";
+static const float sz_title = 56;
+static const float sz_author = 48;
+static const float sz_freq = 44;
 
 InfoOverlay::InfoOverlay(int w, int h)
     : w(w)
@@ -16,25 +19,33 @@ InfoOverlay::InfoOverlay(int w, int h)
     , image(new float[w * h * 4])
     , ctx(w, h)
 {
-    load_font();
-}
-
-void InfoOverlay::load_font()
-{
+    // Load font
     std::string font_path_full;
     path_from_bindir(font_file_name, font_path_full);
-    size_t font_data_size;
-    uint8_t *font_data = load_file(font_path_full.c_str(), &font_data_size);
-    ctx.set_font(font_data, font_data_size, 64);
-    free(font_data);
+    font_data = load_file(font_path_full.c_str(), &font_data_size);
 }
 
 uint8_t const *InfoOverlay::render(const SketchInfo &info, uint16_t freq)
 {
-    ctx.clear();
-    ctx.set_color(canvas_ity::fill_style, 0.8, 0.2, 0.2, 1);
-    snprintf(buf, buf_sz, "Vlhurg %5d", 785);
-    ctx.fill_text(buf, 100, 100);
+    ctx.global_composite_operation = canvas_ity::source_copy;
+    ctx.set_color(canvas_ity::fill_style, 0, 0, 0, 0.8);
+    ctx.fill_rectangle(0, 0, w, h);
+    ctx.global_composite_operation = canvas_ity::source_over;
+
+    // IGR amber brand color: #e1b01b => 0.882, 0.69, 0.106
+    ctx.set_color(canvas_ity::fill_style, 0.882, 0.69, 0.106, 1);
+    ctx.set_font(font_data, font_data_size, sz_title);
+    snprintf(buf, buf_sz, "%s", info.title.c_str());
+    ctx.fill_text(buf, 80, 24 + sz_title);
+    ctx.set_font(font_data, font_data_size, sz_author);
+    snprintf(buf, buf_sz, "from %s", info.creator.c_str());
+    ctx.fill_text(buf, 80, 24 + sz_title * 2.2);
+    // Green color matching amber
+    ctx.set_color(canvas_ity::fill_style, 0.404, 0.816, 0.522, 1);
+    ctx.set_font(font_data, font_data_size, sz_freq);
+    snprintf(buf, buf_sz, "%d.%d QHz", freq / 10, freq % 10);
+    float freq_width = ctx.measure_text(buf);
+    ctx.fill_text(buf, w - freq_width - 80, h - 40);
 
     ctx.get_image_data(image, w, h);
     for (int y = 0; y < h; ++y)
@@ -45,11 +56,12 @@ uint8_t const *InfoOverlay::render(const SketchInfo &info, uint16_t freq)
             float fr = image[ix];
             float fg = image[ix + 1];
             float fb = image[ix + 2];
+            float fa = image[ix + 3];
             ix = ((h - y - 1) * w + x) * 4;
             pixels[ix] = round(fr * 255.0);
             pixels[ix + 1] = round(fg * 255.0);
             pixels[ix + 2] = round(fb * 255.0);
-            pixels[ix + 3] = 255;
+            pixels[ix + 3] = round(fa * 255.0);
         }
     }
     return pixels;

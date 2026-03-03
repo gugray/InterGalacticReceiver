@@ -11,3 +11,9 @@ MMGL01Sketch::MMGL01Sketch(int w, int h, GLuint render_fbo)
     : FragSketch(w, h, render_fbo, mmgl01_frag)
 {
 }
+
+void MMGL01Sketch::get_info(SketchInfo &ski)
+{
+    ski.creator = "matthi";
+    ski.title = "mm-gl-01-240630";
+}

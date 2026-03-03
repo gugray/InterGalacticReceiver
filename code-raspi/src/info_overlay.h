@@ -15,12 +15,11 @@ class InfoOverlay
     const int w;
     const int h;
     char buf[buf_sz];
+    size_t font_data_size;
+    uint8_t *font_data;
     uint8_t *pixels;
     float *image;
     canvas_ity::canvas ctx;
-
-  private:
-    void load_font();
 
   public:
     InfoOverlay(int w, int h);

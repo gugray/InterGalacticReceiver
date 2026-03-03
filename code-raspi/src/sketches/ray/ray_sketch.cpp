@@ -19,6 +19,12 @@ RaySketch::RaySketch(int w, int h, GLuint render_fbo)
     load_png(&bg_pixels, &bg_w, &bg_h, bg_file_name);
 }
 
+void RaySketch::get_info(SketchInfo &ski)
+{
+    ski.creator = "g^b0r";
+    ski.title = "invisible solid";
+}
+
 void RaySketch::frame(double dt)
 {
     time += dt;
