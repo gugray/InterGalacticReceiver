@@ -19,7 +19,7 @@
 #include "sketches/cell/cell_sketch.h"
 #include "sketches/mathperc/mathperc_sketch.h"
 #include "sketches/mmgl01/mmgl01_sketch.h"
-#include "sketches/ray/ray_sketch.h"
+#include "sketches/refraction/refraction_sketch.h"
 #include "sketches/star/star_sketch.h"
 
 // Global
@@ -96,7 +96,7 @@ void init_stations(GLuint render_fbo)
     add_station<MathPercSketch>(render_fbo, 993);
     add_station<StarSketch>(render_fbo, 980);
     add_station<MMGL01Sketch>(render_fbo, 967);
-    add_station<RaySketch>(render_fbo, 953);
+    add_station<RefractionSketch>(render_fbo, 953);
     add_station<CellSketch>(render_fbo, 941);
     add_station<BezixSketch>(render_fbo, 932);
     add_station<AnomalySketch>(render_fbo, 920);

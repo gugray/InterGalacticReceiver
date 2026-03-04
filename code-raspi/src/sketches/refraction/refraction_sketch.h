@@ -5,7 +5,7 @@
 #include "sketch_frag.h"
 #include <vector>
 
-class RaySketch : public FragSketch
+class RefractionSketch : public FragSketch
 {
   private:
     uint8_t *bg_pixels = nullptr;
@@ -23,7 +23,7 @@ class RaySketch : public FragSketch
     void calc_matrices();
 
   public:
-    RaySketch(int w, int h, GLuint render_fbo);
+    RefractionSketch(int w, int h, GLuint render_fbo);
     void get_info(SketchInfo &ski) override;
     void frame(double dt) override;
     void init() override;

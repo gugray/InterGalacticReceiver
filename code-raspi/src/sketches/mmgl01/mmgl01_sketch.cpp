@@ -14,6 +14,6 @@ MMGL01Sketch::MMGL01Sketch(int w, int h, GLuint render_fbo)
 
 void MMGL01Sketch::get_info(SketchInfo &ski)
 {
-    ski.creator = "matthi";
-    ski.title1 = "mm-gl-01-240630";
+    ski.creator = "M—|—zen";
+    ski.title1 = "mmn-gl-01-240630";
 }

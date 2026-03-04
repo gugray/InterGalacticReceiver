@@ -1,7 +1,7 @@
 #ifndef RAY_SHADERS_H
 #define RAY_SHADERS_H
 
-constexpr const char *ray_frag = R"(
+constexpr const char *refraction_frag = R"(
 #version 310 es
 precision highp float;
 
