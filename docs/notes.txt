@@ -4,10 +4,10 @@ Misc TO-DO:
 SW TO-DO:
 OK Fix LED behavior in MCU
 OK Fix frequency jumps (I2C checksum)
+OK Fix static noise (over time)
+OK Do not render hidden shader; only init sketch
 -- Info overlay
 -- Add Kazik broadcast
--- Fix static noise (over time)
--- Do not render hidden shader; only init sketch
 
 Learnings
 -- Wildly swinging tuner readings: 10uF cap fixes it
