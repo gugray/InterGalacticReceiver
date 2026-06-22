@@ -8,7 +8,8 @@
 #include <stdio.h>
 #include <sys/time.h>
 
-TuningFeedback::TuningFeedback()
+TuningFeedback::TuningFeedback(bool quiet)
+    : quiet(quiet)
 {
 }
 
@@ -23,7 +24,8 @@ uint32_t TuningFeedback::get_msec()
 
 void TuningFeedback::tune_status(TuneStatus status)
 {
-    // No change: we're done here
+    // Quiet, or no change: we're done here
+    if (quiet) return;
     if (status == prev_status) return;
 
     uint32_t now = get_msec();
@@ -33,38 +35,25 @@ void TuningFeedback::tune_status(TuneStatus status)
     if (status == tsTuned)
     {
         // Boop buzz
-        // DBG: disabled
-        // HardwareController::buzz(btBoop);
-        HardwareController::set_led(laOff);
-        HardwareController::set_led(laOff);
-        // HardwareController::set_led(laOn); // DBG
+        HardwareController::buzz(btBoop);
+        HardwareController::set_led(laOn);
         is_pumming = false;
     }
     // Going to above/below
     else if (status == tsAbove || status == tsBelow)
     {
-        // If we're going near station from static, buzz
+        // If we're entering station neighborhood from static, buzz
         // No buzz when we're leaving station, or if last change was less than a second ago
         if (prev_status != tsTuned && elapsed > 1000)
         {
-            // DBG: disabled
-            // HardwareController::buzz(btBeepBeep);
+            HardwareController::buzz(btBeepBeep);
         }
-        // DBG
-        HardwareController::set_led(laOff);
-        HardwareController::set_led(laOff);
-        // HardwareController::set_led(status == tsAbove ? laBlinkA : laBlinkB); // DBG
+        HardwareController::set_led(status == tsBelow ? laBlinkA : laBlinkB);
         is_pumming = false;
     }
     else
     {
-        // DBG
-        if (!is_pumming)
-        {
-            HardwareController::set_led(laOff);
-            HardwareController::set_led(laOff);
-            HardwareController::set_led(laPum);
-        }
+        HardwareController::set_led(laPum);
         is_pumming = true;
     }
 

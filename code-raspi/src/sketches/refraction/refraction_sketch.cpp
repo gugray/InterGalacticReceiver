@@ -1,4 +1,4 @@
-#include "ray_sketch.h"
+#include "refraction_sketch.h"
 
 // Local dependencies
 #include "geo_utils.h"
@@ -13,13 +13,19 @@
 static const char *bg_file_name = "img-tile-warm.png";
 static const double fov = degToRad(60);
 
-RaySketch::RaySketch(int w, int h, GLuint render_fbo)
-    : FragSketch(w, h, render_fbo, ray_frag)
+RefractionSketch::RefractionSketch(int w, int h, GLuint render_fbo)
+    : FragSketch(w, h, render_fbo, refraction_frag)
 {
     load_png(&bg_pixels, &bg_w, &bg_h, bg_file_name);
 }
 
-void RaySketch::frame(double dt)
+void RefractionSketch::get_info(SketchInfo &ski)
+{
+    ski.creator = "g^b0r";
+    ski.title1 = "invisible solid";
+}
+
+void RefractionSketch::frame(double dt)
 {
     time += dt;
 
@@ -64,7 +70,7 @@ void RaySketch::frame(double dt)
     glFinish();
 }
 
-void RaySketch::calc_matrices()
+void RefractionSketch::calc_matrices()
 {
     // Camera
     cam_pos = Vector3(0, 0, 10);
@@ -80,20 +86,20 @@ void RaySketch::calc_matrices()
     mat_to_arr(rot_mat, rot_mat_arr);
 }
 
-void RaySketch::init()
+void RefractionSketch::init()
 {
     FragSketch::init();
     bg_tex = create_texture(bg_pixels, bg_w, bg_h);
 }
 
-void RaySketch::unload(double current_time)
+void RefractionSketch::unload(double current_time)
 {
     glDeleteTextures(1, &bg_tex);
     bg_tex = 0;
     FragSketch::unload(current_time);
 }
 
-void RaySketch::reload(double current_time)
+void RefractionSketch::reload(double current_time)
 {
     // This in turn calls my init() override, so nothing else to do here
     FragSketch::reload(current_time);

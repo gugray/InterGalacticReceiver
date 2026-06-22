@@ -5,9 +5,11 @@
 #include "fps.h"
 #include "hardware_controller.h"
 #include "horrors.h"
+#include "info_overlay.h"
 #include "magic.h"
 #include "render_blender.h"
 #include "sketch_base.h"
+#include "sketch_info.h"
 #include "tuner.h"
 #include "tuning_feedback.h"
 
@@ -15,8 +17,9 @@
 #include "sketches/anomaly/anomaly_sketch.h"
 #include "sketches/bezix/bezix_sketch.h"
 #include "sketches/cell/cell_sketch.h"
+#include "sketches/mathperc/mathperc_sketch.h"
 #include "sketches/mmgl01/mmgl01_sketch.h"
-#include "sketches/ray/ray_sketch.h"
+#include "sketches/refraction/refraction_sketch.h"
 #include "sketches/star/star_sketch.h"
 
 // Global
@@ -24,23 +27,35 @@
 
 static Tuner tuner(false);
 static std::vector<SketchBase *> sketches;
+static std::vector<int> freqs;
 static int sketch_ix = -1;
 
 static void init_stations(GLuint render_fbo);
-static void update_station(TuningFeedback &tfb, RenderBlender &renderer, double current_time);
+static bool update_station(TuningFeedback &tfb, InfoOverlay &overlay, RenderBlender &renderer, double current_time);
 
-void main_igr()
+void main_igr(bool quiet)
 {
+    if (quiet)
+    {
+        HardwareController::set_light(false);
+        HardwareController::set_led(laOff);
+    }
+
+    InfoOverlay overlay(W, H);
+
     RenderBlender renderer;
     init_stations(renderer.fbo());
 
     HardwareController::set_listeners(&tuner);
     HardwareController::init();
 
-    TuningFeedback tfb;
+    TuningFeedback tfb(quiet);
 
     FPS fps(TARGET_FPS);
     double last_time = fps.frame_start();
+    fps.log_fps = true;
+
+    if (!quiet) HardwareController::set_light(true);
 
     while (app_running)
     {
@@ -48,19 +63,22 @@ void main_igr()
         double dt = current_time - last_time;
         last_time = current_time;
 
-        update_station(tfb, renderer, current_time);
+        bool render_sketch = update_station(tfb, overlay, renderer, current_time);
         if (sketch_ix == -1) continue;
 
-        sketches[sketch_ix]->frame(dt);
+        if (render_sketch)
+            sketches[sketch_ix]->frame(dt);
+
         renderer.render(current_time);
         put_on_screen();
         fps.frame_end();
 
         int tuner, aknob, bknob, cknob, swtch;
         HardwareController::get_values(tuner, aknob, bknob, cknob, swtch);
-        // DBG: Don't turn on light
-        // HardwareController::set_light(swtch == 0);
     }
+
+    HardwareController::set_light(false);
+    HardwareController::set_led(laOff);
 }
 
 template <typename T>
@@ -70,42 +88,62 @@ void add_station(GLuint render_fbo, int freq)
     sketch->init();
     tuner.add_station(freq);
     sketches.push_back(sketch);
+    freqs.push_back(freq);
 }
 
 void init_stations(GLuint render_fbo)
 {
+    add_station<MathPercSketch>(render_fbo, 993);
     add_station<StarSketch>(render_fbo, 980);
     add_station<MMGL01Sketch>(render_fbo, 967);
-    add_station<RaySketch>(render_fbo, 953);
+    add_station<RefractionSketch>(render_fbo, 953);
     add_station<CellSketch>(render_fbo, 941);
     add_station<BezixSketch>(render_fbo, 932);
     add_station<AnomalySketch>(render_fbo, 920);
 }
 
-void update_station(TuningFeedback &tfb, RenderBlender &renderer, double current_time)
+bool update_station(TuningFeedback &tfb, InfoOverlay &overlay, RenderBlender &renderer, double current_time)
 {
-    int station_ix;
+    int new_ix;
     TuneStatus tuner_status;
-    tuner.get_status(station_ix, tuner_status);
+    tuner.get_status(new_ix, tuner_status);
 
     tfb.tune_status(tuner_status);
 
     // DBG
-    station_ix = 5;
-    tuner_status = tsTuned;
+    // new_ix = 5;
+    // tuner_status = tsTuned;
 
-    if (station_ix < -1) return;
+    if (new_ix < -1) return false;
 
-    if (station_ix != sketch_ix && sketch_ix != -1)
+    // Unload previous sketch, load new one
+    if (new_ix != sketch_ix && sketch_ix != -1)
     {
         sketches[sketch_ix]->unload(current_time);
-        sketches[station_ix]->reload(current_time);
+        sketches[new_ix]->reload(current_time);
     }
-    sketch_ix = station_ix;
+    // If sketch changes: render overlay
+    if (new_ix != sketch_ix)
+    {
+        // Render info overlay
+        SketchInfo ski;
+        sketches[new_ix]->get_info(ski);
+        const uint8_t *px_data = overlay.render(ski, freqs[new_ix]);
+        // Give image to renderer
+        renderer.set_overlay(px_data);
+    }
+    sketch_ix = new_ix;
 
+    bool render_sketch = true;
     if (tuner_status == tsTuned)
         renderer.set_mode(bmSketch);
     else if (tuner_status == tsAbove || tuner_status == tsBelow)
         renderer.set_mode(bmInfo);
-    else renderer.set_mode(bmStatic);
+    else
+    {
+        render_sketch = false;
+        renderer.set_mode(bmStatic);
+    }
+
+    return render_sketch;
 }

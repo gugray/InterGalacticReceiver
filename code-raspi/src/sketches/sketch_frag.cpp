@@ -62,6 +62,8 @@ void FragSketch::frame(double dt)
     glUniform1f(time_loc, (float)time);
     glUniform2f(resolution_loc, (float)w, (float)h);
 
+    set_custom_uniforms(dt);
+
     glBindFramebuffer(GL_FRAMEBUFFER, render_fbo);
     glViewport(0, 0, w, h);
     glClearColor(0, 0, 0, 1);

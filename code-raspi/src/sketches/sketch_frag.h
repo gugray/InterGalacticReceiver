@@ -15,6 +15,9 @@ class FragSketch : public SketchBase
     GLuint vbo = 0;
     double time;
 
+  protected:
+    virtual void set_custom_uniforms(double dt) {};
+
   public:
     FragSketch(int w, int h, GLuint render_fbo, const char *frag);
     virtual void init() override;

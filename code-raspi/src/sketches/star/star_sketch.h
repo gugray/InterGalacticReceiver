@@ -6,6 +6,7 @@
 class StarSketch : public FragSketch
 {
   public:
+    void get_info(SketchInfo &ski) override;
     StarSketch(int w, int h, GLuint render_fbo);
 };
 

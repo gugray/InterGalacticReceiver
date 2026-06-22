@@ -23,6 +23,7 @@ class CellSketch : public SketchBase
 
   public:
     CellSketch(int w, int h, GLuint render_fbo);
+    void get_info(SketchInfo &ski) override;
     virtual void init() override;
     virtual void frame(double dt) override;
     virtual void unload(double current_time) override;

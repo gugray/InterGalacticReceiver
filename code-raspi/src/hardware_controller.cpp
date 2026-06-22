@@ -33,7 +33,6 @@ IValueListener *HardwareController::tuner = nullptr;
 
 static bool is_raspberry_pi()
 {
-    // On Raspberry Pi this file is usually present and contains a model string.
     const char *model_path = "/sys/firmware/devicetree/base/model";
     std::ifstream model_file(model_path);
     if (!model_file.good()) return false;
@@ -51,6 +50,7 @@ struct InputReadings
     uint16_t bKnob;
     uint16_t cKnob;
     uint8_t swtch;
+    uint8_t check;
 };
 #pragma pack(pop)
 
@@ -58,8 +58,7 @@ void HardwareController::init()
 {
     quitting = false;
     enabled = false;
-    bool on_raspi = is_raspberry_pi();
-    if (!on_raspi)
+    if (!is_raspberry_pi())
     {
         printf("Hardware controller disabled: not running on Raspberry Pi.\n");
         return;
@@ -131,7 +130,7 @@ void *HardwareController::loop(void *)
     int length = (int)sizeof(InputReadings);
 
     // Sanity check to keep things in sync with MCU code
-    if (length != 9)
+    if (length != 10)
     {
         fprintf(stderr, "Program error; giving up. Wrong size of InputReadings: %lu", sizeof(InputReadings));
         return nullptr;
@@ -200,13 +199,27 @@ void *HardwareController::loop(void *)
 
 void HardwareController::process_values(const InputReadings &data)
 {
-    if (data.aKnob >= 1024 || data.bKnob >= 1024 || data.bKnob >= 1024)
+    // Validate data
+    const uint8_t *p = (const uint8_t *)&data;
+    uint8_t length = sizeof(InputReadings) - 1;
+    uint8_t check = 0;
+    for (uint8_t i = 0; i < length - 1; ++i, ++p)
+        check ^= *p;
+    if (check != data.check)
+    {
+        printf("Ingoring InputReadings: checksum failed: got %u; expected %u\n", check, data.check);
         return;
-    if (data.swtch != 0 && data.swtch != 15)
-        return;
-    if (data.aKnob == 0 || data.bKnob == 0 || data.cKnob == 0 || data.tuner == 0)
-        return;
-    if (data.tuner >= 1024) return;
+    }
+
+    // Sanity checks before checksum was used
+    // if (data.aKnob >= 1024 || data.bKnob >= 1024 || data.bKnob >= 1024)
+    //     return;
+    // if (data.swtch != 0 && data.swtch != 15)
+    //     return;
+    // if (data.aKnob == 0 || data.bKnob == 0 || data.cKnob == 0 || data.tuner == 0)
+    //     return;
+    // if (data.tuner >= 1024) return;
+
     // Discard nonsense values
     if (data.tuner > 100 && data.tuner < 924)
         __atomic_store_n(&val_tuner, (int)data.tuner, __ATOMIC_SEQ_CST);

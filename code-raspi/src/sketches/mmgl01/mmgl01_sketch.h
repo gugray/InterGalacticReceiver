@@ -6,6 +6,7 @@
 class MMGL01Sketch : public FragSketch
 {
   public:
+    void get_info(SketchInfo &ski) override;
     MMGL01Sketch(int w, int h, GLuint render_fbo);
 };
 

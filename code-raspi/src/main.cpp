@@ -4,6 +4,7 @@
 #include "arg_parse.h"
 #include "error.h"
 #include "file_helpers.h"
+#include "hardware_controller.h"
 #include "horrors.h"
 #include "magic.h"
 
@@ -22,10 +23,13 @@ bool app_running = true;
 #define ACT_CALIBRATE   "action_calibrate"
 #define ACT_TUNER       "action_test_tuner"
 #define ACT_RUN         "action_run"
+#define ACT_OFF         "action_off"
+#define ARG_QUIET       "quiet"
 // clang-format on
 
 static std::string device_path;
 static std::string action;
+bool quiet;
 
 static void sighandler(int);
 static bool parse_args(int argc, const char *argv[]);
@@ -40,9 +44,17 @@ int main(int argc, const char *argv[])
 
         if (!parse_args(argc, argv)) return -1;
 
-        if (action == ACT_CALIBRATE) calibrate_readings();
-        else if (action == ACT_TUNER) test_tuner();
-        else if (action == ACT_RUN)
+        if (action == ACT_OFF)
+        {
+            printf("Turning off the lights. Bye!\n");
+            HardwareController::init();
+            HardwareController::set_light(false);
+            HardwareController::set_led(laOff);
+            usleep(1000 * 200);
+            return 0;
+        }
+
+        if (action == ACT_RUN)
         {
             if (should_use_drm_backend())
             {
@@ -61,8 +73,18 @@ int main(int argc, const char *argv[])
             }
 
             init_horrors(device_path.c_str());
-            main_igr();
+            main_igr(quiet);
             cleanup_horrors();
+        }
+        else
+        {
+            const char *found_device = find_display_device();
+            if (found_device == nullptr) THROWF("No connected display device found");
+            device_path.assign(found_device);
+            delete[] found_device;
+
+            if (action == ACT_CALIBRATE) calibrate_readings();
+            else if (action == ACT_TUNER) test_tuner(quiet);
         }
         printf("\nGoodbye!\n");
         return 0;
@@ -98,6 +120,8 @@ static bool parse_args(int argc, const char *argv[])
     parser.add_argument(ACT_CALIBRATE, "calib", "calibrate-readings", "Action: Calibrate readings");
     parser.add_argument(ACT_TUNER, "tuner", "test-tuner", "Action: Test tuner");
     parser.add_argument(ACT_RUN, "run", "", "Action: Run normally with sketches");
+    parser.add_argument(ACT_OFF, "off", "", "Action: Turn off backlight");
+    parser.add_argument(ARG_QUIET, "-q", "--quiet", "Quiet: no lights or buzzing");
     parser.add_argument("help", "--help", "", "Displays this help message");
     parser.add_argument("dev", "", "--dev", "Device path (default: /dev/dri/card0)", STORE);
 
@@ -112,6 +136,11 @@ static bool parse_args(int argc, const char *argv[])
     bool multiple_actions = false;
 
     if (parser.get(ACT_CALIBRATE).is_set) action = ACT_CALIBRATE;
+    if (parser.get(ACT_OFF).is_set)
+    {
+        if (!action.empty()) multiple_actions = true;
+        else action = ACT_OFF;
+    }
     if (parser.get(ACT_TUNER).is_set)
     {
         if (!action.empty()) multiple_actions = true;
@@ -131,6 +160,7 @@ static bool parse_args(int argc, const char *argv[])
     }
 
     if (parser.get("dev").is_set) device_path.assign(parser.get("dev").value.c_str());
+    quiet = parser.get(ARG_QUIET).is_set;
 
     if (!ok)
     {

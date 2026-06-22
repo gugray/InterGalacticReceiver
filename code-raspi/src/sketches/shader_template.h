@@ -9,8 +9,4 @@ constexpr const char *render_frag = R"(
 SRC ./sh_render.frag
 )";
 
-constexpr const char *static_frag = R"(
-SRC ./sh_static.frag
-)";
-
 #endif

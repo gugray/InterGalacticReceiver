@@ -9,12 +9,11 @@ class AnomalySketch : public FragSketch
     GLint camera_pos_loc = -1;
     GLint camera_basis_loc = -1;
     GLint hash_offset_loc = -1;
-    GLint noise_tex_loc = -1;
     GLuint anomaly_vbo = 0;
-    GLuint noise_tex = 0;
 
   public:
     AnomalySketch(int w, int h, GLuint render_fbo);
+    void get_info(SketchInfo &ski) override;
     void init() override;
     void frame(double dt) override;
     void unload(double current_time) override;

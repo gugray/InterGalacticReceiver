@@ -15,6 +15,12 @@ CellSketch::CellSketch(int w, int h, GLuint render_fbo)
 {
 }
 
+void CellSketch::get_info(SketchInfo &ski)
+{
+    ski.creator = "Grit Kit";
+    ski.title1 = "Stellar Membrane";
+}
+
 void CellSketch::init()
 {
     GLint ok;

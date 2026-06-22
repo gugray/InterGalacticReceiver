@@ -1,22 +1,14 @@
 Misc TO-DO:
 -- Document code for shader contributors
 
-HW TO-DO:
--- Check if large cap helps knobs
--- Try cleaning knob pots
--- Safety R and try cleaning PWR switch
--- New antenna with transparent inlay for LEDs
--- Wire up antenna LEDs
-
 SW TO-DO:
-OK Reduce tuner hysteresis
-OK [MCU] Buzzer commands
-OK [Raspi] Buzz on tune
+OK Fix LED behavior in MCU
+OK Fix frequency jumps (I2C checksum)
+OK Fix static noise (over time)
+OK Do not render hidden shader; only init sketch
 -- Info overlay
--- [MCU] LED commands
--- [Raspi] Detune LED feedback
+-- Add Kazik broadcast
 
 Learnings
 -- Wildly swinging tuner readings: 10uF cap fixes it
--- Refraction sketch OK if 1/4 screen
 

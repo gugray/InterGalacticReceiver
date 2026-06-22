@@ -19,6 +19,9 @@ Disable on-screen login prompt:
 sudo systemctl disable getty@tty1.service
 sudo systemctl stop getty@tty1.service
 
+Need to add user to a few groups:
+sudo usermod -aG video,render,input,spi,i2c,gpio <user>
+
 
 (1) Composite display
 ==========================================

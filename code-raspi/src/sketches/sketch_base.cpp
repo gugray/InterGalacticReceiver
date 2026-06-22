@@ -18,6 +18,12 @@ SketchBase::SketchBase()
     fill_quad(quad);
 }
 
+void SketchBase::get_info(SketchInfo &ski)
+{
+    ski.creator.clear();
+    ski.title1.clear();
+}
+
 void SketchBase::fill_quad(std::vector<GLfloat> &quad)
 {
     quad.assign({-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1});
