@@ -54,18 +54,37 @@ int main(int argc, const char *argv[])
             return 0;
         }
 
-        const char *found_device = find_display_device();
-        if (found_device == nullptr) THROWF("No connected display device found");
-        device_path.assign(found_device);
-        delete[] found_device;
-
-        if (action == ACT_CALIBRATE) calibrate_readings();
-        else if (action == ACT_TUNER) test_tuner(quiet);
-        else if (action == ACT_RUN)
+        if (action == ACT_RUN)
         {
+            if (should_use_drm_backend())
+            {
+                if (device_path.empty())
+                {
+                    const char *found_device = find_display_device();
+                    if (found_device == nullptr) THROWF("No connected display device found");
+                    device_path.assign(found_device);
+                    delete[] found_device;
+                }
+            }
+            else if (!device_path.empty())
+            {
+                printf("Ignoring --dev option in desktop mode.\n");
+                device_path.clear();
+            }
+
             init_horrors(device_path.c_str());
             main_igr(quiet);
             cleanup_horrors();
+        }
+        else
+        {
+            const char *found_device = find_display_device();
+            if (found_device == nullptr) THROWF("No connected display device found");
+            device_path.assign(found_device);
+            delete[] found_device;
+
+            if (action == ACT_CALIBRATE) calibrate_readings();
+            else if (action == ACT_TUNER) test_tuner(quiet);
         }
         printf("\nGoodbye!\n");
         return 0;
